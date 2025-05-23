@@ -1,176 +1,191 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
+import { useState } from 'react'
 
-// Dummy data awal
-const dummySales = [
+type Produk = {
+  id_produk: string
+  nama_produk: string
+  qty: number
+}
+
+type Transaksi = {
+  id: number
+  tanggal: string
+  total: number
+  user: string
+  produk: Produk[]
+}
+
+const allTransactions: Transaksi[] = [
   {
     id: 1,
-    tanggal: '2024-05-17',
-    produk: 'Pumpkin Cookies',
-    jumlah: 3,
-    total: 45000,
+    tanggal: '2024-12-09 08:43:32',
+    total: 60000,
+    user: 'Grace',
+    produk: [
+      { id_produk: 'P001', nama_produk: 'Mie Ayam', qty: 3 },
+      { id_produk: 'P002', nama_produk: 'Telur Balado', qty: 2 },
+    ]
   },
   {
     id: 2,
-    tanggal: '2024-05-18',
-    produk: 'Spooky Donuts',
-    jumlah: 2,
-    total: 30000,
+    tanggal: '2024-12-09 08:43:32',
+    total: 22000,
+    user: 'Hannah',
+    produk: [
+      { id_produk: 'P003', nama_produk: 'Terong Goreng', qty: 2 },
+    ]
   },
-];
+  {
+    id: 3,
+    tanggal: '2024-12-09 08:43:32',
+    total: 120000,
+    user: 'Grace',
+    produk: [
+      { id_produk: 'P004', nama_produk: 'Kwetiaw Goreng', qty: 2 },
+      { id_produk: 'P005', nama_produk: 'Mie Goreng', qty: 2 },
+      { id_produk: 'P001', nama_produk: 'Mie Ayam', qty: 5 },
+    ]
+  },
+  {
+    id: 4,
+    tanggal: '2024-12-09 08:43:32',
+    total: 36000,
+    user: 'David',
+    produk: [
+      { id_produk: 'P001', nama_produk: 'Mie Ayam', qty: 3 }
+    ]
+  },
+  {
+    id: 5,
+    tanggal: '2024-12-09 08:43:32',
+    total: 260000,
+    user: 'Charlie',
+    produk: [
+      { id_produk: 'P006', nama_produk: 'Bakso Kuah', qty: 4 },
+      { id_produk: 'P007', nama_produk: 'Sate Ayam', qty: 4 },
+      { id_produk: 'P007', nama_produk: 'Sate Ayam', qty: 2 },
+    ]
+  },
+]
 
-const produkList = [
-  { name: 'Pumpkin Cookies', price: 15000 },
-  { name: 'Spooky Donuts', price: 15000 },
-  { name: 'Mummy Sausage', price: 18000 },
-];
+function formatRupiah(num: number) {
+  return "Rp" + num.toLocaleString('id-ID');
+}
 
 export default function TransactionsPage() {
-  const [data, setData] = useState(dummySales);
-  const [showAdd, setShowAdd] = useState(false);
-  const [showDetail, setShowDetail] = useState<{open: boolean, trx?: any}>({open: false});
-  const [form, setForm] = useState({ tanggal: '', produk: produkList[0].name, jumlah: 1 });
+  const [search, setSearch] = useState('');
+  const [show, setShow] = useState(5);
+  const [page, setPage] = useState(1);
 
-  // Simpan penjualan baru
-  function handleAdd() {
-    const produkData = produkList.find((p) => p.name === form.produk);
-    if (!produkData) return;
-    const total = produkData.price * form.jumlah;
-    setData([
-      ...data,
-      {
-        id: Math.max(0, ...data.map(d => d.id)) + 1,
-        tanggal: form.tanggal,
-        produk: form.produk,
-        jumlah: form.jumlah,
-        total,
-      },
-    ]);
-    setForm({ tanggal: '', produk: produkList[0].name, jumlah: 1 });
-    setShowAdd(false);
-  }
+  // Filter transaksi berdasarkan nama user atau produk
+  const filtered = allTransactions.filter(trx => {
+    const namaProduk = trx.produk.map(p => p.nama_produk).join(' ').toLowerCase();
+    return (
+      trx.user.toLowerCase().includes(search.toLowerCase()) ||
+      namaProduk.includes(search.toLowerCase())
+    );
+  });
 
-  // Hapus penjualan
-  function handleDelete(id: number) {
-    setData(data.filter((trx) => trx.id !== id));
-  }
+  const totalPages = Math.ceil(filtered.length / show);
 
-  // Detail modal
-  function handleDetail(trx: any) {
-    setShowDetail({ open: true, trx });
+  const paginated = filtered.slice((page - 1) * show, page * show);
+
+  // Handle next, prev
+  function gotoPage(p: number) {
+    if (p >= 1 && p <= totalPages) setPage(p)
   }
 
   return (
-    <div className="p-6 min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-6 text-red-600 flex items-center gap-2">
-        🧾 Daftar Penjualan STECU
-      </h1>
-      <button onClick={() => setShowAdd(true)} className="bg-red-600 hover:bg-red-700 rounded-lg px-4 py-2 mb-4 font-bold">
-        + Tambah Penjualan
-      </button>
-      <div className="overflow-x-auto">
-        <table className="w-full bg-slate-900 rounded-xl shadow-lg">
+    <div className="p-6 min-h-screen bg-[#19191c] text-white">
+      <h1 className="text-4xl font-bold text-red-600 mb-6">🧛 Penjualan</h1>
+      <div className="flex flex-wrap items-center mb-4 gap-2">
+        <label className="text-yellow-400 mr-2">Show:</label>
+        <select
+          className="rounded px-2 py-1 bg-[#232329] text-white border border-gray-600"
+          value={show}
+          onChange={e => { setShow(Number(e.target.value)); setPage(1); }}
+        >
+          {[5, 10, 20, 50].map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          className="ml-auto rounded px-2 py-1 bg-[#232329] border border-gray-600"
+          placeholder="Cari..."
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(1); }}
+          style={{ minWidth: 200 }}
+        />
+      </div>
+
+      <div className="bg-[#141417] rounded-xl overflow-hidden shadow-lg">
+        <table className="w-full table-auto">
           <thead>
-            <tr className="bg-slate-800">
-              <th className="p-3">Tanggal</th>
-              <th className="p-3">Nama Produk</th>
-              <th className="p-3">Jumlah</th>
-              <th className="p-3">Total Harga</th>
-              <th className="p-3">Aksi</th>
+            <tr className="bg-[#701a18] text-white">
+              <th className="py-2 px-4">ID Transaksi</th>
+              <th className="py-2 px-4">Tanggal Transaksi</th>
+              <th className="py-2 px-4">Total Harga</th>
+              <th className="py-2 px-4">Nama Pembeli</th>
+              <th className="py-2 px-4">ID Produk</th>
+              <th className="py-2 px-4">Produk (Qty)</th>
             </tr>
           </thead>
           <tbody>
-            {data.map((trx) => (
-              <tr key={trx.id} className="border-b border-slate-700 hover:bg-slate-800">
-                <td className="p-3">{trx.tanggal}</td>
-                <td className="p-3">{trx.produk}</td>
-                <td className="p-3">{trx.jumlah}</td>
-                <td className="p-3">Rp {trx.total.toLocaleString()}</td>
-                <td className="p-3 space-x-2">
-                  <button className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700" onClick={() => handleDetail(trx)}>
-                    Detail
-                  </button>
-                  <button className="bg-red-600 px-3 py-1 rounded hover:bg-red-700" onClick={() => handleDelete(trx.id)}>
-                    Hapus
-                  </button>
+            {paginated.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-4">Tidak ada data transaksi.</td>
+              </tr>
+            ) : paginated.map(trx => (
+              <tr key={trx.id} className="border-b border-[#222] hover:bg-[#251f1e] transition">
+                <td className="py-2 px-4 text-center">{trx.id}</td>
+                <td className="py-2 px-4 text-center">{trx.tanggal}</td>
+                <td className="py-2 px-4 text-center">{formatRupiah(trx.total)}</td>
+                <td className="py-2 px-4 text-center">{trx.user}</td>
+                <td className="py-2 px-4 text-center">
+                  {trx.produk.map(p => (
+                    <div key={p.id_produk}>{p.id_produk}</div>
+                  ))}
+                </td>
+                <td className="py-2 px-4">
+                  {trx.produk.map(p => (
+                    <div key={p.id_produk}>
+                      <span className="font-bold">{p.nama_produk}</span>
+                      <span className="ml-2 text-sm text-gray-400">x{p.qty}</span>
+                    </div>
+                  ))}
                 </td>
               </tr>
             ))}
-            {data.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center p-6 text-slate-400">
-                  Tidak ada data penjualan.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal Tambah */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-slate-800 rounded-xl p-8 min-w-[320px]">
-            <h2 className="text-xl font-bold mb-4">Tambah Penjualan</h2>
-            <div className="mb-2">
-              <label className="block mb-1">Tanggal</label>
-              <input
-                type="date"
-                value={form.tanggal}
-                onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
-                className="w-full rounded px-2 py-1 text-black"
-              />
-            </div>
-            <div className="mb-2">
-              <label className="block mb-1">Produk</label>
-              <select
-                value={form.produk}
-                onChange={(e) => setForm({ ...form, produk: e.target.value })}
-                className="w-full rounded px-2 py-1 text-black"
-              >
-                {produkList.map((p) => (
-                  <option key={p.name} value={p.name}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="mb-4">
-              <label className="block mb-1">Jumlah</label>
-              <input
-                type="number"
-                min={1}
-                value={form.jumlah}
-                onChange={(e) => setForm({ ...form, jumlah: Number(e.target.value) })}
-                className="w-full rounded px-2 py-1 text-black"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button className="bg-red-600 px-4 py-2 rounded hover:bg-red-700 font-bold" onClick={handleAdd}>
-                Simpan
-              </button>
-              <button className="bg-gray-400 px-4 py-2 rounded font-bold" onClick={() => setShowAdd(false)}>
-                Batal
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Detail */}
-      {showDetail.open && showDetail.trx && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-slate-800 rounded-xl p-8 min-w-[320px]">
-            <h2 className="text-xl font-bold mb-4">Detail Penjualan</h2>
-            <div className="mb-2">Tanggal: <span className="font-bold">{showDetail.trx.tanggal}</span></div>
-            <div className="mb-2">Produk: <span className="font-bold">{showDetail.trx.produk}</span></div>
-            <div className="mb-2">Jumlah: <span className="font-bold">{showDetail.trx.jumlah}</span></div>
-            <div className="mb-2">Total Harga: <span className="font-bold">Rp {showDetail.trx.total.toLocaleString()}</span></div>
-            <button className="mt-4 bg-gray-400 px-4 py-2 rounded font-bold" onClick={() => setShowDetail({open:false})}>
-              Tutup
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-4">
+        <span className="text-sm text-gray-400">
+          Showing {filtered.length === 0 ? 0 : (page - 1) * show + 1}
+          {' '}
+          to {Math.min(page * show, filtered.length)} of {filtered.length} results
+        </span>
+        <div className="flex gap-1">
+          <button onClick={() => gotoPage(page - 1)} disabled={page === 1}
+            className="rounded px-2 py-1 bg-[#232329] text-white disabled:opacity-50">
+            {'<'}
+          </button>
+          {[...Array(totalPages)].map((_, i) => (
+            <button key={i} onClick={() => gotoPage(i + 1)}
+              className={`rounded px-3 py-1 mx-0.5 ${page === i + 1 ? 'bg-red-600' : 'bg-[#232329]'} text-white`}>
+              {i + 1}
             </button>
-          </div>
+          ))}
+          <button onClick={() => gotoPage(page + 1)} disabled={page === totalPages}
+            className="rounded px-2 py-1 bg-[#232329] text-white disabled:opacity-50">
+            {'>'}
+          </button>
         </div>
-      )}
+      </div>
     </div>
-  );
+  )
 }

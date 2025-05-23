@@ -37,7 +37,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-[#28282d] rounded-xl p-6 text-white">
           <div>Total Members</div>
-          <div className="text-3xl font-bold mt-2">8</div>
+          <div className="text-3xl font-bold mt-2">4</div>
         </div>
         <div className="bg-[#28282d] rounded-xl p-6 text-white">
           <div>Outcome</div>

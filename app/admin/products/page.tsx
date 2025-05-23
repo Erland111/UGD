@@ -82,7 +82,7 @@ export default function MenuPage() {
         <table className="w-full bg-gray-900 rounded-xl">
           <thead>
             <tr className="bg-red-900 text-white text-left">
-              <th className="py-3 px-4">ID</th>
+              <th className="py-3 px-4">NO</th>
               <th className="py-3 px-4">MENU</th>
               <th className="py-3 px-4">PRICE</th>
               <th className="py-3 px-4">AKSI</th>
