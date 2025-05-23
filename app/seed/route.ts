@@ -1,6 +1,15 @@
-import bcrypt from 'bcrypt';
 import postgres from 'postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
+
+// Helper function untuk cek apakah di production (Vercel) atau bukan
+function isProduction() {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL;
+}
+
+let bcrypt: typeof import('bcryptjs') | undefined = undefined;
+if (!isProduction()) {
+  bcrypt = require('bcryptjs');
+}
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -17,7 +26,10 @@ async function seedUsers() {
 
   const insertedUsers = await Promise.all(
     users.map(async (user) => {
-      const hashedPassword = await bcrypt.hash(user.password, 10);
+      // Kalau di production, pakai password apa saja (dummy), biar gak error
+      const hashedPassword = bcrypt
+        ? await bcrypt.hash(user.password, 10)
+        : user.password;
       return sql`
         INSERT INTO users (id, name, email, password)
         VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
@@ -102,6 +114,9 @@ async function seedRevenue() {
 }
 
 export async function GET() {
+  if (isProduction()) {
+    return Response.json({ message: 'Seeding route is disabled in production!' });
+  }
   try {
     const result = await sql.begin((sql) => [
       seedUsers(),
