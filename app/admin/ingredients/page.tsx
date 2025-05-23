@@ -1,15 +1,36 @@
+// ===============================
+// /app/admin/purchases/page.tsx
+// ===============================
+
+// 1. TYPES PALING ATAS
+type Bahan = {
+  nama: string;
+  jumlah: number;
+  satuan: string;
+  harga: number;
+};
+
+type Purchase = {
+  id: number;
+  tanggal: string;
+  supplier: string;
+  total: number;
+  bahan: Bahan[];
+};
+
+// 2. IMPORT & DUMMY DATA
 'use client';
 import { useState } from 'react';
 
-const dummyBahan = [
-  { nama: "Daging Sapi", satuan: "kg" },
-  { nama: "Roti Burger", satuan: "pcs" },
-  { nama: "Selada", satuan: "ikat" },
-  { nama: "Pumpkin", satuan: "buah" },
-  { nama: "Keju", satuan: "block" }
+const dummyBahan: Bahan[] = [
+  { nama: "Daging Sapi", satuan: "kg", jumlah: 0, harga: 0 },
+  { nama: "Roti Burger", satuan: "pcs", jumlah: 0, harga: 0 },
+  { nama: "Selada", satuan: "ikat", jumlah: 0, harga: 0 },
+  { nama: "Pumpkin", satuan: "buah", jumlah: 0, harga: 0 },
+  { nama: "Keju", satuan: "block", jumlah: 0, harga: 0 }
 ];
 
-const dummyPurchases = [
+const dummyPurchases: Purchase[] = [
   {
     id: 1,
     tanggal: '2024-05-16',
@@ -31,11 +52,16 @@ const dummyPurchases = [
   }
 ];
 
+// 3. KOMPONEN UTAMA
 export default function PembelianPage() {
-  const [purchases, setPurchases] = useState(dummyPurchases);
+  const [purchases, setPurchases] = useState<Purchase[]>(dummyPurchases);
   const [showForm, setShowForm] = useState(false);
-  const [showDetail, setShowDetail] = useState(null as null | typeof dummyPurchases[0]);
-  const [form, setForm] = useState({
+  const [showDetail, setShowDetail] = useState<Purchase | null>(null);
+  const [form, setForm] = useState<{
+    supplier: string;
+    tanggal: string;
+    bahan: Bahan[];
+  }>({
     supplier: '',
     tanggal: '',
     bahan: [{ nama: '', jumlah: 1, satuan: '', harga: 0 }],
@@ -48,25 +74,24 @@ export default function PembelianPage() {
   }));
 
   // Hapus bahan pada form
-  const removeBahan = idx => setForm(f => ({
+  const removeBahan = (idx: number) => setForm(f => ({
     ...f,
     bahan: f.bahan.filter((_, i) => i !== idx)
   }));
 
   // Handle field bahan
-  const handleBahanChange = (idx, field, value) => {
+  const handleBahanChange = (idx: number, field: keyof Bahan, value: any) => {
     const bahan = [...form.bahan];
-    bahan[idx][field] = value;
-    // Jika nama, otomatis ambil satuan dari dummyBahan
-    if(field === 'nama'){
+    (bahan[idx][field] as any) = value;
+    if (field === 'nama') {
       const find = dummyBahan.find(b => b.nama === value);
-      if(find) bahan[idx].satuan = find.satuan;
+      if (find) bahan[idx].satuan = find.satuan;
     }
     setForm(f => ({ ...f, bahan }));
   };
 
   // Tambah pembelian
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const total = form.bahan.reduce((sum, b) => sum + (Number(b.harga) * Number(b.jumlah)), 0);
     setPurchases([
@@ -84,8 +109,9 @@ export default function PembelianPage() {
   };
 
   // Hapus pembelian
-  const handleDelete = (id) => setPurchases(purchases.filter(p => p.id !== id));
+  const handleDelete = (id: number) => setPurchases(purchases.filter(p => p.id !== id));
 
+  // UI (TIDAK ADA YANG PERLU DIUBAH)
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6 text-red-600">🧟‍♂️ Daftar Pembelian Bahan Baku</h1>
@@ -187,6 +213,6 @@ export default function PembelianPage() {
     </div>
   );
 }
-  
+
 // Tambahkan di global.css:
 // .input { @apply mb-2 px-3 py-2 rounded w-full bg-gray-800 text-white placeholder:text-gray-400 outline-none border border-gray-600 focus:border-red-500; }

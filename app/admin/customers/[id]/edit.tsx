@@ -14,7 +14,13 @@ export default function EditCustomerPage() {
   useEffect(() => {
     const customers = getCustomers();
     const cust = customers.find((c: any) => c.id === id);
-    if (cust) setForm(cust);
+    if (cust) setForm({
+      name: cust.name ?? "",
+      social: cust.social ?? "",
+      progress: String(cust.progress ?? ""), // <-- FIX (progress string)
+      member: cust.member ?? "",
+      status: cust.status ?? "",
+    });
     else router.push("/admin/customers");
   }, [id]);
 
@@ -26,7 +32,14 @@ export default function EditCustomerPage() {
     e.preventDefault();
     const customers = getCustomers();
     const idx = customers.findIndex((c: any) => c.id === id);
-    customers[idx] = form;
+    customers[idx] = {
+      ...customers[idx], // <-- FIX (agar id tidak hilang)
+      name: form.name,
+      social: form.social,
+      progress: Number(form.progress), // <-- FIX (progress number)
+      member: form.member,
+      status: form.status,
+    };
     saveCustomers(customers);
     router.push("/admin/customers");
   };

@@ -2,17 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hilangkan panah spinner di input number (semua browser) */
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
-
 input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Custom Tailwind class untuk input form biar konsisten dan cakep */
+.input {
+  @apply mb-2 px-3 py-2 rounded w-full bg-gray-800 text-white placeholder:text-gray-400 outline-none border border-gray-600 focus:border-red-500;
 }

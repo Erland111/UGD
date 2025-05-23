@@ -1,21 +1,27 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useState } from 'react';
 
+// ==================
+// 1. Types/interfaces
+// ==================
 type Produk = {
-  id_produk: string
-  nama_produk: string
-  qty: number
-}
+  id_produk: string;
+  nama_produk: string;
+  qty: number;
+};
 
 type Transaksi = {
-  id: number
-  tanggal: string
-  total: number
-  user: string
-  produk: Produk[]
-}
+  id: number;
+  tanggal: string;
+  total: number;
+  user: string;
+  produk: Produk[];
+};
 
+// ==================
+// 2. Dummy Data
+// ==================
 const allTransactions: Transaksi[] = [
   {
     id: 1,
@@ -67,20 +73,23 @@ const allTransactions: Transaksi[] = [
       { id_produk: 'P007', nama_produk: 'Sate Ayam', qty: 2 },
     ]
   },
-]
+];
 
 function formatRupiah(num: number) {
   return "Rp" + num.toLocaleString('id-ID');
 }
 
+// ==================
+// 3. Main Component
+// ==================
 export default function TransactionsPage() {
-  const [search, setSearch] = useState('');
-  const [show, setShow] = useState(5);
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState<string>('');
+  const [show, setShow] = useState<number>(5);
+  const [page, setPage] = useState<number>(1);
 
   // Filter transaksi berdasarkan nama user atau produk
   const filtered = allTransactions.filter(trx => {
-    const namaProduk = trx.produk.map(p => p.nama_produk).join(' ').toLowerCase();
+    const namaProduk = trx.produk.map((p) => p.nama_produk).join(' ').toLowerCase();
     return (
       trx.user.toLowerCase().includes(search.toLowerCase()) ||
       namaProduk.includes(search.toLowerCase())
@@ -93,7 +102,7 @@ export default function TransactionsPage() {
 
   // Handle next, prev
   function gotoPage(p: number) {
-    if (p >= 1 && p <= totalPages) setPage(p)
+    if (p >= 1 && p <= totalPages) setPage(p);
   }
 
   return (
@@ -144,13 +153,13 @@ export default function TransactionsPage() {
                 <td className="py-2 px-4 text-center">{formatRupiah(trx.total)}</td>
                 <td className="py-2 px-4 text-center">{trx.user}</td>
                 <td className="py-2 px-4 text-center">
-                  {trx.produk.map(p => (
-                    <div key={p.id_produk}>{p.id_produk}</div>
+                  {trx.produk.map((p, i) => (
+                    <div key={p.id_produk + i}>{p.id_produk}</div>
                   ))}
                 </td>
                 <td className="py-2 px-4">
-                  {trx.produk.map(p => (
-                    <div key={p.id_produk}>
+                  {trx.produk.map((p, i) => (
+                    <div key={p.id_produk + '-' + i}>
                       <span className="font-bold">{p.nama_produk}</span>
                       <span className="ml-2 text-sm text-gray-400">x{p.qty}</span>
                     </div>
@@ -187,5 +196,5 @@ export default function TransactionsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
