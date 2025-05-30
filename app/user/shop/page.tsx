@@ -1,5 +1,5 @@
 // app/user/shop/page.tsx
-import { fetchProducts } from '../../../lib/query/products';
+import { fetchProducts } from '@/lib/query/products';
 
 export default async function ShopPage() {
   const products = await fetchProducts();
