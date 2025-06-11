@@ -1,138 +1,198 @@
-'use client';
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-import Image from 'next/image';
-import { useState } from 'react';
-
-type MenuItem = {
+// Tipe produk
+type Product = {
   id: number;
-  nama: string;
-  harga: number;
-  img: string;
+  name: string;
+  price: number;
+  image_url: string | null;
 };
 
-const initialMenus: MenuItem[] = [
-  {
-    id: 1,
-    nama: 'Nasi Goreng Hantu',
-    harga: 25001,
-    img: '/images/products/close-up-view-delicious-halloween-cookies.jpg',
-  },
-  {
-    id: 2,
-    nama: 'Mie Ayam Pocong',
-    harga: 12000,
-    img: '/images/products/close-up-view-halloween-donuts-concept.jpg',
-  },
-  {
-    id: 3,
-    nama: 'Bakso Kuah Genderuwo',
-    harga: 20000,
-    img: '/images/products/festive-cute-halloween-cookies (1).jpg',
-  },
-  {
-    id: 4,
-    nama: 'Mie Pangsit Setan',
-    harga: 13000,
-    img: '/images/products/halloween-concept-table.jpg',
-  },
-  {
-    id: 5,
-    nama: 'Ayam Goreng Kuntilanak',
-    harga: 25000,
-    img: '/images/products/high-angle-halloween-food-arrangement-concept.jpg',
-  },
-];
+// Ambil data produk dari API
+async function fetchProducts(): Promise<Product[]> {
+  const res = await fetch("/api/products");
+  if (!res.ok) return [];
+  return res.json();
+}
 
-export default function MenuPage() {
-  const [menus, setMenus] = useState<MenuItem[]>(initialMenus);
+// Hapus produk (cukup method DELETE, id di URL)
+async function deleteProduct(id: number) {
+  const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+  return res.ok;
+}
 
-  const handleDelete = (id: number) => {
-    if (confirm('Apakah kamu yakin ingin menghapus menu menyeramkan ini? 👻')) {
-      setMenus(menus.filter((m) => m.id !== id));
-    }
-  };
-
+function SkeletonRow() {
   return (
-    <div className="min-h-screen bg-black text-white px-8 py-6">
-      <h1 className="text-4xl font-extrabold mb-6 text-red-600 flex items-center gap-2">
-        <span role="img" aria-label="ghost">👻</span> Menu Horor STECU
-      </h1>
+    <tr className="animate-pulse border-b border-[#232329]">
+      <td className="py-3 px-4 text-center align-middle">
+        <div className="h-20 w-20 mx-auto bg-gray-700 rounded" />
+      </td>
+      <td className="py-3 px-4 text-center align-middle">
+        <div className="h-6 w-32 bg-gray-700 rounded mx-auto mb-1" />
+      </td>
+      <td className="py-3 px-4 text-center align-middle">
+        <div className="h-6 w-24 bg-gray-700 rounded mx-auto" />
+      </td>
+      <td className="py-3 px-4 text-center align-middle">
+        <div className="h-8 w-20 bg-gray-700 rounded mx-auto" />
+      </td>
+    </tr>
+  );
+}
 
-      <div className="mb-4 flex items-center gap-4">
-        <label className="text-yellow-400 font-bold" htmlFor="show">Show:</label>
-        <select id="show" className="bg-gray-900 border border-red-800 rounded px-3 py-1 text-white font-semibold">
-          <option>5</option>
-          <option>10</option>
-          <option>All</option>
-        </select>
-        <input
-          className="ml-6 bg-gray-900 border border-gray-700 rounded px-3 py-1 text-white"
-          placeholder="Cari menu horor..."
-          disabled // fitur cari dummy
-        />
+export default function AdminProductPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  
+  // PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  
+  useEffect(() => {
+    fetchProducts().then((data) => {
+      setProducts(Array.isArray(data) ? data : []);
+      setLoading(false);
+    });
+  }, []);
+
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Pagination logic
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pagedProducts = filtered.slice(startIdx, endIdx);
+
+  // Reset ke page 1 kalau search berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  async function handleDelete(id: number) {
+    if (confirm("Hapus produk ini?")) {
+      const ok = await deleteProduct(id);
+      if (ok) setProducts((prev) => prev.filter((p) => p.id !== id));
+      else alert("Gagal menghapus produk!");
+    }
+  }
+
+  function Pagination() {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex gap-2 justify-center my-4">
         <button
-          className="bg-red-800 hover:bg-red-700 ml-2 px-4 py-2 rounded font-bold text-white shadow transition"
-          disabled
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50"
         >
-          Tambah Menu Baru
+          &lt;
+        </button>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <button
+            key={i}
+            className={`px-3 py-1 rounded ${
+              currentPage === i + 1
+                ? "bg-red-700 text-white"
+                : "bg-gray-700 text-white"
+            }`}
+            onClick={() => setCurrentPage(i + 1)}
+          >
+            {i + 1}
+          </button>
+        ))}
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50"
+        >
+          &gt;
         </button>
       </div>
+    );
+  }
 
-      <div className="overflow-x-auto rounded-xl shadow-lg">
-        <table className="w-full bg-gray-900 rounded-xl">
+  return (
+    <div className="p-6 min-h-screen bg-black">
+      <h1 className="text-3xl font-bold text-red-500 mb-4">Daftar Menu</h1>
+      <div className="flex items-center mb-4 gap-2">
+        <input
+          className="px-3 py-2 rounded bg-[#232329] text-white border border-gray-600 outline-none"
+          placeholder="Cari menu..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ minWidth: 220 }}
+        />
+        <Link
+          href="/admin/products/new"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded ml-auto"
+        >
+          + Tambah Produk
+        </Link>
+      </div>
+      <div className="overflow-x-auto rounded">
+        <table className="w-[98%] mx-auto rounded-xl overflow-hidden mt-2">
           <thead>
-            <tr className="bg-red-900 text-white text-left">
-              <th className="py-3 px-4">NO</th>
-              <th className="py-3 px-4">MENU</th>
-              <th className="py-3 px-4">PRICE</th>
-              <th className="py-3 px-4">AKSI</th>
+            <tr className="bg-[#6c3129] text-white">
+              <th className="py-3 px-4 text-center font-bold">Foto</th>
+              <th className="py-3 px-4 text-center font-bold">Nama</th>
+              <th className="py-3 px-4 text-center font-bold">Harga</th>
+              <th className="py-3 px-4 text-center font-bold">Aksi</th>
             </tr>
           </thead>
-          <tbody>
-            {menus.map((menu) => (
-              <tr key={menu.id} className="border-b border-gray-800 hover:bg-red-950 transition">
-                <td className="py-2 px-4">{menu.id}</td>
-                <td className="py-2 px-4 flex items-center gap-4">
-                  <div className="w-14 h-14 rounded overflow-hidden border-2 border-yellow-900 shadow-inner">
-                    <Image
-                      src={menu.img}
-                      alt={menu.nama}
-                      width={56}
-                      height={56}
-                      className="object-cover w-14 h-14"
-                    />
-                  </div>
-                  <span className="font-bold">{menu.nama}</span>
-                </td>
-                <td className="py-2 px-4 text-yellow-300 font-bold">
-                  {menu.harga.toLocaleString('id-ID')} IDR
-                </td>
-                <td className="py-2 px-4 flex gap-2">
-                  <button
-                    className="bg-yellow-500 hover:bg-yellow-700 px-3 py-1 rounded font-bold text-black shadow transition"
-                    disabled
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="bg-red-600 hover:bg-red-800 px-3 py-1 rounded font-bold text-white shadow transition"
-                    onClick={() => handleDelete(menu.id)}
-                  >
-                    Hapus
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {menus.length === 0 && (
+          <tbody className="bg-black">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+            ) : pagedProducts.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center text-gray-400 py-10 text-xl animate-pulse">
-                  <span role="img" aria-label="ghost">👻</span> Tidak ada menu horor tersedia...
+                <td colSpan={4} className="py-6 text-center text-white">
+                  Tidak ada produk.
                 </td>
               </tr>
+            ) : (
+              pagedProducts.map((p) => (
+                <tr key={p.id} className="border-b border-[#232329]">
+                  <td className="py-3 px-4 text-center align-middle">
+                    {p.image_url && (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        className="h-20 w-20 mx-auto object-cover rounded"
+                      />
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center align-middle">{p.name}</td>
+                  <td className="py-3 px-4 text-center align-middle">
+                    Rp {p.price.toLocaleString("id-ID")}
+                  </td>
+                  <td className="py-3 px-4 text-center align-middle">
+                    <div className="flex justify-center gap-2">
+                      <Link
+                        href={`/admin/products/${p.id}`}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-1 rounded font-bold transition"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="bg-red-600 hover:bg-red-800 text-white px-4 py-1 rounded font-bold transition"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
+      <Pagination />
     </div>
   );
 }

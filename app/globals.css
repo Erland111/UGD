@@ -2,4 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-.input { @apply mb-2 px-3 py-2 rounded w-full bg-gray-800 text-white placeholder:text-gray-400 outline-none border border-gray-600 focus:border-red-500; }
+/* Global dark theme */
+html, body {
+  background: #19191c !important;
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* Input styling universal */
+.input {
+  @apply mb-2 px-3 py-2 rounded w-full bg-gray-800 text-white placeholder:text-gray-400 outline-none border border-gray-600 focus:border-red-500;
+}
+
+/* Optional: dark card helper class (jika mau pakai di component manual) */
+.card-dark {
+  @apply bg-[#141417] rounded-xl shadow-lg text-white;
+}

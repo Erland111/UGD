@@ -1,59 +1,85 @@
-// app/admin/members/page.tsx
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
-const dummyMembers = [
-  {
-    id: 1,
-    nama: 'Joko',
-    hp: '0812xxxxxxx',
-    email: 'joko@mail.com',
-    status: 'VIP',
-    totalBelanja: 1200000,
-  },
-  {
-    id: 2,
-    nama: 'Lisa',
-    hp: '0813xxxxxxx',
-    email: 'lisa@mail.com',
-    status: 'Reguler',
-    totalBelanja: 200000,
-  },
-  // ...tambah data lain
-];
+// Tipe data harus sesuai kolom database-mu (termasuk id, walau tidak ditampilkan)
+type Member = {
+  id: number;
+  name: string;
+  social: string;
+  progress: number;
+  status: string;
+  member: string;
+};
 
 export default function MembersPage() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/members")
+      .then((res) => res.json())
+      .then((data) => {
+        setMembers(Array.isArray(data) ? data : []);
+        setLoading(false);
+      });
+  }, []);
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold text-red-500">👥 Daftar Member</h1>
-        <Link href="/admin/members/add" className="bg-red-600 px-4 py-2 rounded-lg text-white">+ Tambah Member</Link>
-      </div>
-      <table className="w-full bg-gray-900 text-white rounded-xl overflow-hidden">
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Daftar Member</h1>
+      <Link
+        href="/admin/members/add"
+        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold mb-4 inline-block"
+      >
+        Tambah Member
+      </Link>
+      <table className="w-full bg-[#141417] rounded-xl overflow-hidden mt-4">
         <thead>
-          <tr>
-            <th className="p-2">Nama</th>
-            <th className="p-2">No HP</th>
-            <th className="p-2">Status</th>
-            <th className="p-2">Total Belanja</th>
-            <th className="p-2">Aksi</th>
+          <tr className="bg-[#232329] text-yellow-300">
+            {/* <th className="py-3 px-4 text-left">ID</th> */}
+            <th className="py-3 px-4 text-left">Nama</th>
+            <th className="py-3 px-4 text-left">No. HP</th>
+            <th className="py-3 px-4 text-left">Progress</th>
+            <th className="py-3 px-4 text-left">Status</th>
+            <th className="py-3 px-4 text-left">Member</th>
+            <th className="py-3 px-4 text-left">Aksi</th>
           </tr>
         </thead>
         <tbody>
-          {dummyMembers.map((m) => (
-            <tr key={m.id} className="border-t border-gray-800">
-              <td className="p-2">{m.nama}</td>
-              <td className="p-2">{m.hp}</td>
-              <td className="p-2">{m.status}</td>
-              <td className="p-2">Rp {m.totalBelanja.toLocaleString('id-ID')}</td>
-              <td className="p-2">
-                <Link href={`/admin/members/${m.id}/detail`} className="mr-2 text-blue-400 underline">Detail</Link>
-                <Link href={`/admin/members/${m.id}/edit`} className="mr-2 text-yellow-400 underline">Edit</Link>
-                <button className="text-red-400 underline">Hapus</button>
+          {loading ? (
+            <tr>
+              <td colSpan={6} className="py-4 text-center">
+                Loading...
               </td>
             </tr>
-          ))}
+          ) : members.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="py-4 text-center">
+                Tidak ada data member.
+              </td>
+            </tr>
+          ) : (
+            members.map((m) => (
+              <tr key={m.id} className="border-b border-[#232329]">
+                {/* <td className="py-2 px-4">{m.id}</td> */}
+                <td className="py-2 px-4">{m.name}</td>
+                <td className="py-2 px-4">{m.social}</td>
+                <td className="py-2 px-4">{m.progress}</td>
+                <td className="py-2 px-4">{m.status}</td>
+                <td className="py-2 px-4">{m.member}</td>
+                <td className="py-2 px-4">
+                  <Link
+                    href={`/admin/members/${m.id}`}
+                    className="text-blue-400 underline"
+                  >
+                    Edit
+                  </Link>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

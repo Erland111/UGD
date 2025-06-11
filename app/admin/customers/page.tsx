@@ -1,65 +1,136 @@
-// app/admin/customers/page.tsx
-
 "use client";
-import Link from "next/link";
+
 import { useEffect, useState } from "react";
-import { getCustomers, saveCustomers, Customer } from "./customers-storage";
+import Link from "next/link";
+
+type Customer = {
+  id: number;
+  name: string;
+  social: string;
+  progress: number;
+  member: string;
+  status: string;
+};
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    setCustomers(getCustomers());
+    fetchData();
   }, []);
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Yakin hapus pelanggan?")) return;
-    const newCustomers = customers.filter(c => c.id !== id);
-    setCustomers(newCustomers);
-    saveCustomers(newCustomers);
-  };
+  function fetchData() {
+    setLoading(true);
+    fetch("/api/customers")
+      .then((res) => res.json())
+      .then((data) => {
+        setCustomers(Array.isArray(data) ? data : []);
+        setLoading(false);
+      });
+  }
+
+  function formatRupiah(num: number) {
+    return "Rp " + num.toLocaleString("id-ID");
+  }
+
+  const filtered = customers.filter((c) => {
+    const val = search.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(val) ||
+      c.social.toLowerCase().includes(val) ||
+      c.member.toLowerCase().includes(val) ||
+      c.status.toLowerCase().includes(val)
+    );
+  });
+
+  async function handleDelete(id: number) {
+    if (confirm("Hapus pelanggan ini?")) {
+      const res = await fetch(`/api/customers/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setCustomers((prev) => prev.filter((c) => c.id !== id));
+      } else {
+        alert("Gagal hapus data!");
+      }
+    }
+  }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-red-600 mb-4">👻 Daftar Pelanggan</h1>
-      <Link href="/admin/customers/add">
-        <button className="bg-red-600 text-white rounded px-4 py-2 mb-4 hover:bg-red-700">+ Tambah Pelanggan</button>
-      </Link>
-      <table className="w-full bg-black text-white rounded">
-        <thead>
-          <tr className="bg-red-900">
-            <th>Nama</th>
-            <th>Social Media</th>
-            <th>Progress Transaksi</th>
-            <th>Member</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customers.length === 0 ? (
+    <div className="p-6 min-h-screen bg-black">
+      <h1 className="text-3xl font-bold text-red-500 mb-4">Daftar Pelanggan</h1>
+
+      <div className="flex items-center mb-4 gap-2">
+        <input
+          className="px-3 py-2 rounded bg-[#232329] text-white border border-gray-600 outline-none"
+          placeholder="Cari pelanggan..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ minWidth: 220 }}
+        />
+        <Link
+          href="/admin/customers/add"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-auto"
+        >
+          Tambah Pelanggan
+        </Link>
+      </div>
+
+      <div className="overflow-x-auto rounded">
+        <table className="w-[95%] mx-auto bg-black rounded-xl overflow-hidden text-base">
+          <thead>
             <tr>
-              <td colSpan={6} className="text-center py-6 text-gray-300">Tidak ada pelanggan.</td>
+              <th className="py-2 px-4 bg-red-900 text-white font-bold text-center">Nama</th>
+              <th className="py-2 px-4 bg-red-900 text-white font-bold text-center">No. HP</th>
+              <th className="py-2 px-4 bg-red-900 text-white font-bold text-center">Saldo</th>
+              <th className="py-2 px-4 bg-red-900 text-white font-bold text-center">Member</th>
+              <th className="py-2 px-4 bg-red-900 text-white font-bold text-center">Status</th>
+              <th className="py-2 px-4 bg-red-900 text-white font-bold text-center">Aksi</th>
             </tr>
-          ) : customers.map((c) => (
-            <tr key={c.id} className="hover:bg-gray-800 transition">
-              <td>
-                <Link href={`/admin/customers/${c.id}/detail`} className="text-blue-400 hover:underline">{c.name}</Link>
-              </td>
-              <td>{c.social}</td>
-              <td>{c.progress}</td>
-              <td>{c.member}</td>
-              <td>{c.status}</td>
-              <td>
-                <Link href={`/admin/customers/${c.id}/edit`}>
-                  <button className="bg-yellow-400 text-black px-2 rounded mr-2">Edit</button>
-                </Link>
-                <button className="bg-red-600 text-white px-2 rounded" onClick={() => handleDelete(c.id)}>Hapus</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-gray-400 bg-black">
+                  Loading...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-gray-400 bg-black">
+                  Tidak ada data pelanggan.
+                </td>
+              </tr>
+            ) : (
+              filtered.map((cust) => (
+                <tr key={cust.id} className="border-b border-gray-700 hover:bg-red-950 transition">
+                  <td className="py-4 px-4 text-center align-middle">{cust.name}</td>
+                  <td className="py-4 px-4 text-center align-middle">{cust.social}</td>
+                  <td className="py-4 px-4 text-center align-middle">{formatRupiah(cust.progress)}</td>
+                  <td className="py-4 px-4 text-center align-middle">{cust.member}</td>
+                  <td className="py-4 px-4 text-center align-middle">{cust.status}</td>
+                  <td className="py-4 px-4 text-center align-middle">
+                    <div className="flex justify-center gap-2">
+                      <Link
+                        href={`/admin/customers/${cust.id}/edit`}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-1 rounded font-bold transition"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(cust.id)}
+                        className="bg-red-600 hover:bg-red-800 text-white px-4 py-1 rounded font-bold transition"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

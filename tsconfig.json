@@ -8,29 +8,31 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "baseUrl": ".",
+
+    // ✅ BASED ON ROOT, biar universal
+    
+    "baseUrl": "./app",
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": ["*"],
+      "@/lib/*": ["lib/*"],
+      "@/lib/query/*": ["lib/query/*"]  
+    },
+
+    "plugins": [
+      { "name": "next" }
+    ]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/lib/placeholder-data.ts",
-    "app/lib/query/*.ts",
-    "scripts/seed.js"
+    "next.config.js"
   ],
   "exclude": ["node_modules"]
 }
