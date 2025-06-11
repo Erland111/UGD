@@ -3,7 +3,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createProduct, updateProduct } from "@/lib/action/products";
 
-export default function ProductForm({ params }) {
+// Tambahkan tipe props di sini
+type ProductFormProps = {
+  params: {
+    id: string;
+  };
+};
+
+export default function ProductForm({ params }: ProductFormProps) {
   const router = useRouter();
   const isEdit = params.id !== "new";
   const [product, setProduct] = useState({
@@ -39,12 +46,12 @@ export default function ProductForm({ params }) {
     }
   }, [isEdit, params.id]);
 
-  function handleInputChange(e) {
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
@@ -67,7 +74,7 @@ export default function ProductForm({ params }) {
       <h1 className="text-2xl font-bold text-red-500 mb-4">
         {isEdit ? "Edit Produk" : "Tambah Produk"}
       </h1>
-      {isEdit && ( // PENTING! input hidden ini harus ada
+      {isEdit && (
         <input type="hidden" name="id" value={product.id || params.id} />
       )}
       <label className="block mb-2">Nama Produk</label>
