@@ -12,12 +12,13 @@ export default function ProductAddPage() {
     image_url: "",
   });
 
-  function handleInputChange(e) {
+  // FIX: Tambah tipe parameter event di sini
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     await createProduct(formData);
