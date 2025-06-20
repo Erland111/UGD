@@ -77,17 +77,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#202024] p-8 relative">
-      {/* Tombol Profil Admin kanan atas */}
-      <button
-        onClick={handleProfile}
-        className="absolute top-6 right-10 bg-zinc-700 hover:bg-zinc-500 text-white px-5 py-2 rounded-lg font-bold shadow z-20"
-      >
-        Profil Admin
-      </button>
-
-      {/* Tombol Logout kiri bawah */}
-      
-
+            
       <h1 className="text-4xl font-bold text-white mb-8">Dashboard</h1>
 
       {/* Statistik Atas */}

@@ -63,6 +63,10 @@ export default function TransactionsPage() {
   });
   const [editTrx, setEditTrx] = useState<Sale | null>(null);
 
+  // PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -83,12 +87,11 @@ export default function TransactionsPage() {
     fetchProducts();
   }, []);
 
-  // === Helper untuk ambil harga otomatis saat pilih produk ===
+  // Helper ambil harga otomatis
   const updateAddItem = (idx: number, field: string, value: string | number) =>
     setAddData((d) => {
       let updated = d.items.map((item, i) => {
         if (i !== idx) return item;
-        // Otomatis update harga dari produk jika ganti produk
         if (field === 'product_id') {
           const selected = products.find((p) => p.id === Number(value));
           return {
@@ -102,8 +105,7 @@ export default function TransactionsPage() {
       return { ...d, items: updated };
     });
 
-  // Untuk edit modal juga bisa sama (opsional, kalau mau edit harga juga otomatis)
-
+  // Filter + paginasi
   const filteredTransactions = transactions.filter(
     (trx) =>
       trx.customer_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -111,6 +113,15 @@ export default function TransactionsPage() {
         item.name?.toLowerCase().includes(search.toLowerCase())
       )
   );
+  const totalItems = filteredTransactions.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pagedTransactions = filteredTransactions.slice(startIdx, endIdx);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const formatTanggal = (tgl: string | null) => {
     if (!tgl) return '-';
@@ -130,7 +141,7 @@ export default function TransactionsPage() {
       items: d.items.filter((_, i) => i !== idx),
     }));
 
-  // --- Handle Simpan ---
+  // Tambah transaksi
   const handleAddTransaksi = async () => {
     const total = addData.items.reduce(
       (sum, item) => sum + Number(item.price) * Number(item.quantity),
@@ -154,14 +165,14 @@ export default function TransactionsPage() {
     window.location.reload();
   };
 
-  // --- Handle Hapus ---
+  // Hapus transaksi
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin hapus transaksi ini?')) return;
     await fetch(`/api/sales/${id}`, { method: 'DELETE' });
     setTransactions((trx) => trx.filter((t) => t.id !== id));
   };
 
-  // --- Modal Edit (opsional: auto harga juga bisa) ---
+  // Modal Edit
   const addEditItemRow = () =>
     setEditTrx((trx) =>
       trx
@@ -201,6 +212,18 @@ export default function TransactionsPage() {
         : null
     );
 
+  const handleEditInput = (field: keyof Sale, value: any) => {
+    setEditTrx((trx) =>
+      trx
+        ? {
+            ...trx,
+            [field]: value,
+          }
+        : null
+    );
+  };
+
+  // Simpan edit transaksi
   const handleEditTransaksi = async () => {
     if (!editTrx) return;
     const total =
@@ -208,25 +231,70 @@ export default function TransactionsPage() {
         (sum, item) => sum + Number(item.price) * Number(item.quantity),
         0
       ) || 0;
+
+    // Pastikan semuanya number
+    const items = (editTrx.items || []).map((it) => ({
+      product_id: Number(it.product_id),
+      quantity: Number(it.quantity),
+      price: Number(it.price),
+    }));
+
     const payload = {
       customer_name: editTrx.customer_name,
       date: editTrx.date,
       total,
-      items:
-        editTrx.items?.map((it) => ({
-          product_id: it.product_id,
-          quantity: it.quantity,
-          price: it.price,
-        })) || [],
+      items,
     };
-    await fetch(`/api/sales/${editTrx.id}`, {
+
+    const res = await fetch(`/api/sales/${editTrx.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    setEditTrx(null);
-    window.location.reload();
+
+    if (res.ok) {
+      setEditTrx(null);
+      window.location.reload();
+    } else {
+      alert("Gagal update transaksi!");
+    }
   };
+
+  // PAGINATION
+  function Pagination() {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex gap-2 justify-center my-6">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50"
+        >
+          &lt;
+        </button>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <button
+            key={i}
+            className={`px-3 py-1 rounded ${
+              currentPage === i + 1
+                ? "bg-red-700 text-white font-bold"
+                : "bg-gray-700 text-white"
+            }`}
+            onClick={() => setCurrentPage(i + 1)}
+          >
+            {i + 1}
+          </button>
+        ))}
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50"
+        >
+          &gt;
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black p-8">
@@ -260,14 +328,14 @@ export default function TransactionsPage() {
           <tbody className="bg-black">
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-            ) : filteredTransactions.length === 0 ? (
+            ) : pagedTransactions.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-10 text-center text-white">
                   Tidak ada transaksi.
                 </td>
               </tr>
             ) : (
-              filteredTransactions.map((trx) => (
+              pagedTransactions.map((trx) => (
                 <tr
                   key={trx.id}
                   className="border-b border-[#232329] align-top hover:bg-[#1a1a1a] transition"
@@ -337,6 +405,8 @@ export default function TransactionsPage() {
             )}
           </tbody>
         </table>
+        {/* PAGINATION DIBAWAH TABEL */}
+        <Pagination />
       </div>
 
       {/* MODAL TAMBAH TRANSAKSI */}
@@ -448,9 +518,7 @@ export default function TransactionsPage() {
                 placeholder="Nama Pelanggan"
                 value={editTrx.customer_name}
                 onChange={(e) =>
-                  setEditTrx((t) =>
-                    t ? { ...t, customer_name: e.target.value } : t
-                  )
+                  handleEditInput("customer_name", e.target.value)
                 }
               />
               <input
@@ -458,9 +526,7 @@ export default function TransactionsPage() {
                 type="date"
                 value={editTrx.date || ''}
                 onChange={(e) =>
-                  setEditTrx((t) =>
-                    t ? { ...t, date: e.target.value } : t
-                  )
+                  handleEditInput("date", e.target.value)
                 }
               />
               <div className="mb-2">

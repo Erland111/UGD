@@ -9,26 +9,30 @@ export default function LoginPage() {
   const router = useRouter();
 
   function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    if (!username || !password) return setError("Isi semua kolom!");
+  e.preventDefault();
+  setError("");
+  if (!username || !password) return setError("Isi semua kolom!");
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find(
-      (u: any) => u.username === username && u.password === password
-    );
-    if (!user) return setError("Username atau password salah!");
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  const user = users.find(
+    (u: any) => u.username === username && u.password === password
+  );
+  if (!user) return setError("Username atau password salah!");
 
-    // Simpan status login (optional, misal token, dst)
-    localStorage.setItem("loggedInUser", JSON.stringify(user));
+  // Simpan objek user (opsional)
+  localStorage.setItem("loggedInUser", JSON.stringify(user));
+  // Simpan username dan role supaya bisa dipakai di layout/profile
+  localStorage.setItem("username", user.username);
+  localStorage.setItem("role", user.role);
 
-    // Redirect sesuai role
-    if (user.role === "admin") {
-      router.push("/admin/dashboard");
-    } else {
-      router.push("/user");
-    }
+  // Redirect sesuai role
+  if (user.role === "admin") {
+    router.push("/admin/dashboard");
+  } else {
+    router.push("/user");
   }
+}
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-zinc-800">

@@ -23,7 +23,7 @@ export async function PATCH(
   const body = await req.json();
   try {
     const updated = await updateCustomer(id, body);
-    return NextResponse.json(updated[0]);
+    return NextResponse.json(updated);
   } catch {
     return NextResponse.json({ error: "DB Error" }, { status: 500 });
   }

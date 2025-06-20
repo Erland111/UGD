@@ -1,7 +1,13 @@
+'use client';
+import { useRouter } from "next/navigation";
+
 export default function UserHomePage() {
+  const router = useRouter();
+
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-      <div className="space-y-8 w-full md:w-1/2">
+    <div className="flex flex-col md:flex-row items-center justify-between gap-8 min-h-[calc(100vh-110px)]">
+      {/* Bagian Kiri: Card Produk */}
+      <div className="space-y-8 w-full md:w-1/2 flex flex-col justify-center">
         {/* Card Produk 1 */}
         <div className="bg-[#141417] rounded-xl p-6 shadow-lg flex gap-4 items-center">
           <span className="text-5xl">🍔</span>
@@ -23,14 +29,18 @@ export default function UserHomePage() {
           </div>
         </div>
       </div>
+      {/* Bagian Kanan: Heading & Button */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center">
         <h1 className="text-5xl font-black leading-tight mb-4 text-center">
-          SAMBUT MAKAN MALAM <span className="text-red-400">PALING MENCEKAM</span>
+          SAMBUT MAKANAN <span className="text-red-400">PALING MENCEKAM</span>
         </h1>
         <p className="text-yellow-300 text-lg font-bold mb-8 text-center">
           Temukan sensasi kuliner mistis di <span className="text-[#ffd700]">STECU</span>!
         </p>
-        <button className="bg-red-400 hover:bg-red-500 text-white rounded-xl px-8 py-4 text-2xl font-bold shadow-lg">
+        <button
+          className="bg-red-400 hover:bg-red-500 text-white rounded-xl px-8 py-4 text-2xl font-bold shadow-lg transition"
+          onClick={() => router.push("/user/shop")}
+        >
           PESAN SEKARANG
         </button>
       </div>

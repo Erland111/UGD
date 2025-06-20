@@ -1,121 +1,156 @@
 "use client";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createProduct, updateProduct } from "@/lib/action/products";
+import { useRouter, useParams } from "next/navigation";
 
-// Tambahkan tipe props di sini
-type ProductFormProps = {
-  params: {
-    id: string;
-  };
+// --- TIPE DATA ---
+type Product = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string | null;
 };
 
-export default function ProductForm({ params }: ProductFormProps) {
+export default function EditProductPage() {
   const router = useRouter();
-  const isEdit = params.id !== "new";
-  const [product, setProduct] = useState({
-    id: "",
+  const params = useParams();
+  // Next.js App Router: params.id bisa string atau array
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<Partial<Product>>({
     name: "",
     description: "",
-    price: "",
+    price: 0,
     image_url: "",
   });
+  const [image, setImage] = useState<string>("");
 
-  // Fetch data saat edit
+  // --- Ambil data produk lama ---
   useEffect(() => {
-    if (isEdit) {
-      fetch(`/api/products/${params.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setProduct({
-            id: data?.id?.toString() || params.id, // fallback params.id
-            name: data?.name ?? "",
-            description: data?.description ?? "",
-            price: data?.price?.toString() ?? "",
-            image_url: data?.image_url ?? "",
-          });
+    async function fetchProduct() {
+      setLoading(true);
+      const res = await fetch(`/api/products/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setForm({
+          name: data.name || "",
+          description: data.description || "",
+          price: data.price || 0,
+          image_url: data.image_url || "",
         });
-    } else {
-      setProduct({
-        id: "",
-        name: "",
-        description: "",
-        price: "",
-        image_url: "",
-      });
+        setImage(data.image_url || "");
+      }
+      setLoading(false);
     }
-  }, [isEdit, params.id]);
+    if (id) fetchProduct();
+  }, [id]);
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
-    setProduct((prev) => ({ ...prev, [name]: value }));
+  // --- File ke Base64 ---
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setImage(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // --- Submit update produk ---
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-
-    // Jaga-jaga, append id kalau belum ada
-    if (isEdit && !formData.get("id")) {
-      formData.append("id", product.id || params.id);
-    }
-
-    if (isEdit) {
-      await updateProduct(formData);
+    setSaving(true);
+    const payload = {
+      ...form,
+      price: Number(form.price) || 0,
+      image_url: image, // base64
+    };
+    const res = await fetch(`/api/products/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setSaving(false);
+    if (res.ok) {
+      alert("Berhasil update produk!");
+      router.push("/admin/products");
     } else {
-      await createProduct(formData);
+      alert("Gagal update produk!");
     }
-    router.push("/admin/products");
-    router.refresh();
   }
 
+  // --- Render Form ---
   return (
-    <form onSubmit={handleSubmit} className="p-6 bg-black text-white">
-      <h1 className="text-2xl font-bold text-red-500 mb-4">
-        {isEdit ? "Edit Produk" : "Tambah Produk"}
-      </h1>
-      {isEdit && (
-        <input type="hidden" name="id" value={product.id || params.id} />
+    <div className="min-h-screen p-8 bg-black text-white">
+      <h1 className="text-3xl font-bold text-red-400 mb-6">Edit Produk</h1>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="max-w-xl bg-[#18181c] rounded-lg p-6 space-y-5"
+        >
+          <div>
+            <label className="font-semibold block mb-1">Nama Produk</label>
+            <input
+              className="w-full p-2 rounded bg-[#232329] text-white mb-2"
+              value={form.name ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, name: e.target.value }))
+              }
+              required
+            />
+          </div>
+          <div>
+            <label className="font-semibold block mb-1">Deskripsi</label>
+            <textarea
+              className="w-full p-2 rounded bg-[#232329] text-white mb-2"
+              value={form.description ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
+              rows={3}
+              required
+            />
+          </div>
+          <div>
+            <label className="font-semibold block mb-1">Harga</label>
+            <input
+              className="w-full p-2 rounded bg-[#232329] text-white mb-2"
+              type="number"
+              value={form.price ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, price: Number(e.target.value) }))
+              }
+              min={0}
+              required
+            />
+          </div>
+          <div>
+            <label className="font-semibold block mb-1">Gambar Produk</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="mb-2"
+            />
+            {image && (
+              <img
+                src={image}
+                alt="Preview"
+                className="w-32 h-32 rounded mb-2 object-cover border"
+              />
+            )}
+          </div>
+          <button
+            type="submit"
+            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded text-white font-bold"
+            disabled={saving}
+          >
+            {saving ? "Menyimpan..." : "Simpan"}
+          </button>
+        </form>
       )}
-      <label className="block mb-2">Nama Produk</label>
-      <input
-        name="name"
-        value={product.name}
-        onChange={handleInputChange}
-        className="mb-4 p-2 w-full bg-gray-800 border border-gray-600 rounded"
-        required
-      />
-      <label className="block mb-2">Deskripsi</label>
-      <input
-        name="description"
-        value={product.description}
-        onChange={handleInputChange}
-        className="mb-4 p-2 w-full bg-gray-800 border border-gray-600 rounded"
-        required
-      />
-      <label className="block mb-2">Harga</label>
-      <input
-        name="price"
-        type="number"
-        value={product.price}
-        onChange={handleInputChange}
-        className="mb-4 p-2 w-full bg-gray-800 border border-gray-600 rounded"
-        required
-      />
-      <label className="block mb-2">Gambar URL</label>
-      <input
-        name="image_url"
-        value={product.image_url}
-        onChange={handleInputChange}
-        className="mb-6 p-2 w-full bg-gray-800 border border-gray-600 rounded"
-        required
-      />
-      <button
-        type="submit"
-        className="bg-green-700 px-4 py-2 rounded hover:bg-green-600 font-bold"
-      >
-        Simpan
-      </button>
-    </form>
+    </div>
   );
 }

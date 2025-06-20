@@ -35,8 +35,8 @@ export async function POST(req: Request) {
     // }
 
     const inserted = await createCustomer(body);
-    return NextResponse.json(inserted[0]);
-  } catch (err) {
+    return NextResponse.json(customer);
+  } catch {
     return NextResponse.json({ error: "DB Error" }, { status: 500 });
   }
 }

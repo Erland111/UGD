@@ -10,61 +10,36 @@ type Product = {
   image_url: string | null;
 };
 
-// Ambil data produk dari API
-async function fetchProducts(): Promise<Product[]> {
-  const res = await fetch("/api/products");
-  if (!res.ok) return [];
-  return res.json();
-}
-
-// Hapus produk (cukup method DELETE, id di URL)
-async function deleteProduct(id: number) {
-  const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-  return res.ok;
-}
-
-function SkeletonRow() {
-  return (
-    <tr className="animate-pulse border-b border-[#232329]">
-      <td className="py-3 px-4 text-center align-middle">
-        <div className="h-20 w-20 mx-auto bg-gray-700 rounded" />
-      </td>
-      <td className="py-3 px-4 text-center align-middle">
-        <div className="h-6 w-32 bg-gray-700 rounded mx-auto mb-1" />
-      </td>
-      <td className="py-3 px-4 text-center align-middle">
-        <div className="h-6 w-24 bg-gray-700 rounded mx-auto" />
-      </td>
-      <td className="py-3 px-4 text-center align-middle">
-        <div className="h-8 w-20 bg-gray-700 rounded mx-auto" />
-      </td>
-    </tr>
-  );
-}
-
 export default function AdminProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  
+  const [deleting, setDeleting] = useState<number | null>(null);
+
   // PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  
+
+  async function fetchProducts() {
+    setLoading(true);
+    const res = await fetch("/api/products");
+    const data = await res.ok ? await res.json() : [];
+    setProducts(Array.isArray(data) ? data : []);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    fetchProducts().then((data) => {
-      setProducts(Array.isArray(data) ? data : []);
-      setLoading(false);
-    });
+    fetchProducts();
   }, []);
 
+  // Filtering
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   // Pagination logic
   const totalItems = filtered.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIdx = (currentPage - 1) * itemsPerPage;
   const endIdx = startIdx + itemsPerPage;
   const pagedProducts = filtered.slice(startIdx, endIdx);
@@ -74,12 +49,44 @@ export default function AdminProductPage() {
     setCurrentPage(1);
   }, [search]);
 
-  async function handleDelete(id: number) {
-    if (confirm("Hapus produk ini?")) {
-      const ok = await deleteProduct(id);
-      if (ok) setProducts((prev) => prev.filter((p) => p.id !== id));
-      else alert("Gagal menghapus produk!");
+  // --- PERBAIKAN POIN INI ---
+  useEffect(() => {
+    // Kalau halaman sekarang kosong tapi masih ada produk, pindah ke page sebelumnya/1
+    if (!loading && pagedProducts.length === 0 && currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
     }
+  }, [pagedProducts, loading, currentPage]);
+
+  async function handleDelete(id: number) {
+    if (!confirm("Hapus produk ini?")) return;
+    setDeleting(id);
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      // Ambil data baru setelah hapus
+      await fetchProducts();
+    } else {
+      alert("Gagal menghapus produk!");
+    }
+    setDeleting(null);
+  }
+
+  function SkeletonRow() {
+    return (
+      <tr className="animate-pulse border-b border-[#232329]">
+        <td className="py-3 px-4 text-center align-middle">
+          <div className="h-20 w-20 mx-auto bg-gray-700 rounded" />
+        </td>
+        <td className="py-3 px-4 text-center align-middle">
+          <div className="h-6 w-32 bg-gray-700 rounded mx-auto mb-1" />
+        </td>
+        <td className="py-3 px-4 text-center align-middle">
+          <div className="h-6 w-24 bg-gray-700 rounded mx-auto" />
+        </td>
+        <td className="py-3 px-4 text-center align-middle">
+          <div className="h-8 w-20 bg-gray-700 rounded mx-auto" />
+        </td>
+      </tr>
+    );
   }
 
   function Pagination() {
@@ -158,12 +165,14 @@ export default function AdminProductPage() {
               pagedProducts.map((p) => (
                 <tr key={p.id} className="border-b border-[#232329]">
                   <td className="py-3 px-4 text-center align-middle">
-                    {p.image_url && (
+                    {p.image_url ? (
                       <img
                         src={p.image_url}
                         alt={p.name}
                         className="h-20 w-20 mx-auto object-cover rounded"
                       />
+                    ) : (
+                      <div className="h-20 w-20 mx-auto rounded bg-gray-700" />
                     )}
                   </td>
                   <td className="py-3 px-4 text-center align-middle">{p.name}</td>
@@ -180,9 +189,10 @@ export default function AdminProductPage() {
                       </Link>
                       <button
                         onClick={() => handleDelete(p.id)}
-                        className="bg-red-600 hover:bg-red-800 text-white px-4 py-1 rounded font-bold transition"
+                        className="bg-red-600 hover:bg-red-800 text-white px-4 py-1 rounded font-bold transition disabled:opacity-60"
+                        disabled={deleting === p.id}
                       >
-                        Hapus
+                        {deleting === p.id ? "..." : "Hapus"}
                       </button>
                     </div>
                   </td>
