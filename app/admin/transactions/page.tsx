@@ -96,7 +96,7 @@ export default function TransactionsPage() {
           const selected = products.find((p) => p.id === Number(value));
           return {
             ...item,
-            product_id: value,
+            product_id: String (value),
             price: selected ? selected.price : 0,
           };
         }
