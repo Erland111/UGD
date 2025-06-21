@@ -8,7 +8,7 @@ export async function createProduct(formData: FormData) {
   const name = formData.get('name')?.toString().trim();
   const description = formData.get('description')?.toString().trim();
   const price = Number(formData.get('price'));
-  const image_url = formData.get('image_url')?.toString().trim() || ''; // ✅ fallback string kosong
+  const image_url = formData.get('image_url')?.toString().trim() || ''; 
 
   if (!name) throw new Error('Name kosong');
   if (!description) throw new Error('Description kosong');
@@ -25,7 +25,7 @@ export async function updateProduct(formData: FormData) {
   const name = formData.get('name')?.toString().trim();
   const description = formData.get('description')?.toString().trim();
   const price = Number(formData.get('price'));
-  const image_url = formData.get('image_url')?.toString().trim() || ''; // ✅ fallback juga di sini
+  const image_url = formData.get('image_url')?.toString().trim() || ''; 
 
   if (!id) throw new Error('ID kosong');
   if (!name) throw new Error('Name kosong');
